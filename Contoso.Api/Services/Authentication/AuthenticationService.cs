@@ -44,9 +44,10 @@ public class AuthenticationService : IAuthenticationService
 
     public async Task<LoginDto> RegisterAsync(UserDto userDto)
     {
-        var isUserExists = _context.Users
+        var userCount = await _context.Users
                             .Where(u => u.Email == userDto.Email)
-                            .CountAsync() > 0;
+                            .CountAsync();
+        var isUserExists = userCount > 0;
 
         if (isUserExists)
         {
