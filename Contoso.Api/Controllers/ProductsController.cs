@@ -3,6 +3,8 @@ using Contoso.Api.Models;
 using Contoso.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Azure.Storage.Blobs;
+using Azure.Identity;
 
 namespace Contoso.Api.Controllers;
 
@@ -60,14 +62,53 @@ public class ProductsController : ControllerBase
 
     [HttpPost("upload/images")]
     [Authorize]
-    public async Task<IActionResult> GetUploadBlobUrl([FromBody] List<ProductImageDto> productImage)
+    public async Task<IActionResult> GetUploadBlobUrl([FromBody] List<ProductImageDto> productImages)
     {
-        
-         ///////////////////////
-        //// YOUR CODE HERE ///
-       ///////////////////////
-       
-       return  BadRequest();
+        if (productImages == null || productImages.Count == 0)
+        {
+            return BadRequest("No images provided for upload.");
+        }
+
+        string containerName = "t03container";
+
+        try
+        {            
+             BlobServiceClient client = new(
+                new Uri($"https://t03storage.blob.core.windows.net"),
+                new DefaultAzureCredential()
+                );
+
+            // Get a reference to a container and create it if it doesn't exist.
+            BlobContainerClient containerClient = client.GetBlobContainerClient(containerName);
+
+            foreach (var image in productImages)
+            {
+                using var stream = new MemoryStream(image.Image);
+
+                // 1. Create a unique file name to avoid overwrites
+                string uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(image.ImageUrl)}";
+                BlobClient blobClient = containerClient.GetBlobClient(uniqueFileName);
+
+                // 2. Upload the image data to Azure Blob Storage
+                await blobClient.UploadAsync(stream, overwrite: true);
+
+                // 3. Set the custom metadata
+                var metadata = new Dictionary<string, string>
+                {
+                    { "ReleaseDate", DateTime.UtcNow.AddDays(5).ToString("o") } // "o" for round-trip ISO 8601 format
+                };
+                await blobClient.SetMetadataAsync(metadata);
+
+                // 4. Add it to the db
+            }
+        }
+        catch (Exception ex)
+        {
+            // Catch exceptions related to container creation or configuration
+            return StatusCode(500, $"An error occurred while processing the request: {ex.Message}");
+        }
+
+        return StatusCode(200);
     }
 
     [HttpPost("create/bulk")]
