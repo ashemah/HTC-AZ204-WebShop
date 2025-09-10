@@ -58,7 +58,7 @@
                     <h3>@product.Name</h3> 
                     @if (!string.IsNullOrEmpty(product.ImageUrl))
                     {
-                        <img src="https://t03storage.blob.core.windows.net/t03container/@product.ImageUrl" alt="@product.Name" class="product-image"/>
+                        <img src="@product.ImageUrl" alt="@product.Name" class="product-image"/>
                     }
                     <p>Price: @product.Price.ToString("C")</p>
                     <form method="post" asp-page-handler="ImageClick">
