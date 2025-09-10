@@ -50,8 +50,10 @@ public class ProductsService : IProductsService
 
     public async Task<ProductDto> GetProductAsync(int id)
     {
-        var product = await _context.Products.FindAsync(id); 
-        return _mapper.Map<ProductDto>(product);
+        var product = await _context.Products.FindAsync(id);
+        var foo = _mapper.Map<ProductDto>(product);
+        foo.ImageUrl = product.ImageUrl + "?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D";
+        return foo;
     }
 
     public async Task<ProductDto> CreateProductAsync(ProductDto product)
