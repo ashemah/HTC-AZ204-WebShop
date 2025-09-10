@@ -71,7 +71,7 @@ public class ProductsService : IProductsService
             }
             else
             {
-                item.ImageUrl = null;
+                item.ImageUrl = "comingsoon.png" + "?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D";
             }
 
         }
@@ -129,7 +129,7 @@ public class ProductsService : IProductsService
             }
             else
             {
-                item.ImageUrl = null;
+                item.ImageUrl = "comingsoon.png" + "?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D";
             }
 
 
