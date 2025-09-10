@@ -28,10 +28,14 @@ public class ProductsService : IProductsService
         var totalCount = await _context.Products
                                         .Where(p =>  p.Category == queryParameters.filterText || string.IsNullOrEmpty(queryParameters.filterText))
                                         .CountAsync();
-
+        var itemsZZ = _mapper.Map<List<ProductDto>>(products);
+        foreach (var item in itemsZZ)
+        {
+            item.ImageUrl =item.ImageUrl + "?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D"
+        }
         var pagedProducts = new PagedResult<ProductDto>
         {
-            Items = _mapper.Map<List<ProductDto>>(products),
+            Items = itemZZ,
             TotalCount = totalCount,
             PageSize = queryParameters.PageSize,
             PageNumber = queryParameters.PageNumber
@@ -43,7 +47,7 @@ public class ProductsService : IProductsService
 
     public async Task<ProductDto> GetProductAsync(int id)
     {
-        var product = await _context.Products.FindAsync(id);
+        var product = await _context.Products.FindAsync(id); 
         return _mapper.Map<ProductDto>(product);
     }
 
