@@ -3,6 +3,10 @@ using AutoMapper;
 using Contoso.Api.Data;
 using Contoso.Api.Models;
 using Microsoft.EntityFrameworkCore;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using Azure.Identity;
+
 
 namespace Contoso.Api.Services;
 
@@ -25,6 +29,7 @@ public class ProductsService : IProductsService
         );
 
         // Get a reference to a container and create it if it doesn't exist.
+        var containerName = "t03container";
         BlobContainerClient containerClient = client.GetBlobContainerClient(containerName);
 
 
@@ -48,7 +53,14 @@ public class ProductsService : IProductsService
             {
                 Console.WriteLine($"Metadata Key: {metadataItem.Key}, Value: {metadataItem.Value}");    
             }
-            var releaseDate = properties.Metadata.GetValueOrDefault("ReleaseDate", "0");
+
+            var releaseDate = "0";
+            try
+            {
+                releaseDate = properties.Metadata["ReleaseDate"];
+            } catch {}
+  
+
             DateTime currentTime = DateTime.UtcNow;
             long unixTime = ((DateTimeOffset)currentTime).ToUnixTimeSeconds();
             long releaseDateUnix = long.Parse(releaseDate);
@@ -79,20 +91,49 @@ public class ProductsService : IProductsService
 
     public async Task<ProductDto> GetProductAsync(int id)
     {
+        var product = await _context.Products.FindAsync(id);
+        var item = _mapper.Map<ProductDto>(product);
+
+
         BlobServiceClient client = new(
             new Uri($"https://t03storage.blob.core.windows.net"),
             new DefaultAzureCredential()
         );
 
         // Get a reference to a container and create it if it doesn't exist.
+        var containerName = "t03container";
         BlobContainerClient containerClient = client.GetBlobContainerClient(containerName);
 
+            BlobClient blobClient = containerClient.GetBlobClient(item.ImageUrl);
+            BlobProperties properties = blobClient.GetProperties();
+            foreach (var metadataItem in properties.Metadata)
+            {
+                Console.WriteLine($"Metadata Key: {metadataItem.Key}, Value: {metadataItem.Value}");    
+            }
+
+            var releaseDate = "0";
+            try
+            {
+                releaseDate = properties.Metadata["ReleaseDate"];
+            } catch {}
 
 
-        var product = await _context.Products.FindAsync(id);
-        var foo = _mapper.Map<ProductDto>(product);
-        foo.ImageUrl = product.ImageUrl + "?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D";
-        return foo;
+
+        DateTime currentTime = DateTime.UtcNow;
+            long unixTime = ((DateTimeOffset)currentTime).ToUnixTimeSeconds();
+            long releaseDateUnix = long.Parse(releaseDate);
+
+            if (unixTime >= releaseDateUnix)
+            {
+                item.ImageUrl = item.ImageUrl + "?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D";
+            }
+            else
+            {
+                item.ImageUrl = null;
+            }
+
+
+        return item;
     }
 
     public async Task<ProductDto> CreateProductAsync(ProductDto product)
