@@ -126,7 +126,11 @@ public class ProductsService : IProductsService
             long releaseDateUnix = long.Parse(releaseDate);
 
         Console.WriteLine($"HERE1");
-        var imageUri = blobClient.GenerateSasUri(Azure.Storage.Sas.BlobSasPermissions.Read, DateTimeOffset.UtcNow.AddHours(1));
+        var imageUri = "https://t03storage.blob.core.windows.net/t03container/comingsoon.png?sp=r&st=2025-09-10T01:27:43Z&se=2032-06-23T09:42:43Z&spr=https&sv=2024-11-04&sr=b&sig=fSE6dU5VPOb3fo%2FTd2bYvH5QClnAQeYrNeGrbZwgv7k%3D";
+        try
+        {
+            imageUri = blobClient.GenerateSasUri(Azure.Storage.Sas.BlobSasPermissions.Read, DateTimeOffset.UtcNow.AddHours(1));
+        } catch {}
         Console.WriteLine($"HERE2 {imageUri}");
         if (unixTime >= releaseDateUnix)
         {
