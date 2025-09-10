@@ -74,7 +74,7 @@ public class ProductsService : IProductsService
 
             if (unixTime >= releaseDateUnix)
             {
-                item.ImageUrl = item.ImageUrl + "?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D";
+                item.ImageUrl = "https://t03storage.blob.core.windows.net/t03container/" + iitem.ImageUrl + "?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D";
                 //item.ImageUrl = imageUri.ToString();
             }
             else
@@ -141,7 +141,7 @@ public class ProductsService : IProductsService
         // Console.WriteLine($"HERE2 {imageUri}");
         if (unixTime >= releaseDateUnix)
         {
-            item.ImageUrl = item.ImageUrl + "?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D";
+            item.ImageUrl = "https://t03storage.blob.core.windows.net/t03container/" + item.ImageUrl + "?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D";
             //item.ImageUrl = imageUri.ToString();
         }
         else
