@@ -38,7 +38,7 @@ public class ProductsService : IProductsService
 
         var pagedProducts = new PagedResult<ProductDto>
         {
-            Items = itemZZ,
+            Items = itemsZZ,
             TotalCount = totalCount,
             PageSize = queryParameters.PageSize,
             PageNumber = queryParameters.PageNumber
