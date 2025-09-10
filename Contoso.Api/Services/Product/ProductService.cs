@@ -29,10 +29,13 @@ public class ProductsService : IProductsService
                                         .Where(p =>  p.Category == queryParameters.filterText || string.IsNullOrEmpty(queryParameters.filterText))
                                         .CountAsync();
         var itemsZZ = _mapper.Map<List<ProductDto>>(products);
+
         foreach (var item in itemsZZ)
         {
-            item.ImageUrl =item.ImageUrl + "?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D"
+            item.ImageUrl = item.ImageUrl + "?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D";
         }
+
+
         var pagedProducts = new PagedResult<ProductDto>
         {
             Items = itemZZ,
