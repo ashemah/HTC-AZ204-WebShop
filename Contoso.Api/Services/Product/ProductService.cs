@@ -73,7 +73,7 @@ public class ProductsService : IProductsService
             }
             else
             {
-                item.ImageUrl = "https://t03storage.blob.core.windows.net/t03container/comingsoon.png?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D";
+                item.ImageUrl = "https://t03storage.blob.core.windows.net/t03container/comingsoon.png?sp=r&st=2025-09-10T01:27:43Z&se=2032-06-23T09:42:43Z&spr=https&sv=2024-11-04&sr=b&sig=fSE6dU5VPOb3fo%2FTd2bYvH5QClnAQeYrNeGrbZwgv7k%3D";
             }
 
         }
@@ -125,15 +125,16 @@ public class ProductsService : IProductsService
             long unixTime = ((DateTimeOffset)currentTime).ToUnixTimeSeconds();
             long releaseDateUnix = long.Parse(releaseDate);
 
-            if (unixTime >= releaseDateUnix)
-            {
-                //item.ImageUrl = item.ImageUrl + "?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D";
-                item.ImageUrl = imageUri.ToString();
-            }
-            else
-            {
-            item.ImageUrl = "https://t03storage.blob.core.windows.net/t03container/comingsoon.png?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D";
-            }
+            var imageUri = blobClient.GenerateSasUri(Azure.Storage.Sas.BlobSasPermissions.Read, DateTimeOffset.UtcNow.AddHours(1));
+        if (unixTime >= releaseDateUnix)
+        {
+            //item.ImageUrl = item.ImageUrl + "?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D";
+            item.ImageUrl = imageUri.ToString();
+        }
+        else
+        {
+            item.ImageUrl = "https://t03storage.blob.core.windows.net/t03container/comingsoon.png?sp=r&st=2025-09-10T01:27:43Z&se=2032-06-23T09:42:43Z&spr=https&sv=2024-11-04&sr=b&sig=fSE6dU5VPOb3fo%2FTd2bYvH5QClnAQeYrNeGrbZwgv7k%3D";
+        }
 
 
         return item;
