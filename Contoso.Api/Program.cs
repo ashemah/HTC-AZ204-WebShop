@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
 using Contoso.Api.Configuration;
+// using Microsoft.Azure.Cosmos;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,12 +47,25 @@ builder.Services.AddTransient<IOrderService, OrderService>();
 builder.Services.AddTransient<IUserService, UserService>();
 
 // Get connection string for SQL Server
-var connectionString = builder.Configuration.GetConnectionString("ContosoDBConnection");
+// var connectionString = builder.Configuration.GetConnectionString("ContosoDBConnection");
 
 // Add DbContext
+// builder.Services.AddDbContext<ContosoDbContext>(options =>
+// {
+//     options.UseSqlServer(connectionString);
+// });
+
+var cosmosEndpoint = builder.Configuration["CosmosDB:Endpoint"];
+var cosmosAccessKey = builder.Configuration["CosmosDB:AccessKey"];
+var cosmosDBName = builder.Configuration["CosmosDB:DatabaseName"];
+
 builder.Services.AddDbContext<ContosoDbContext>(options =>
 {
-    options.UseSqlServer(connectionString);
+    options.UseCosmos(
+        cosmosEndpoint,
+        cosmosAccessKey,
+        cosmosDBName
+    );
 });
 
 var app = builder.Build();

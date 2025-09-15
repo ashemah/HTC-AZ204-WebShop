@@ -10,15 +10,27 @@ namespace Contoso.Api.Models
 
         public DbSet<Product> Products { get; set; }
 
-        public DbSet<OrderItem> OrderItems { get; set; }
-
         public DbSet<Order> Orders { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Order>()
-                .Property(o => o.Status)
-                .HasConversion<string>();
+                .HasNoDiscriminator()
+                .ToContainer("Orders")
+                .HasPartitionKey(da => da.Id)
+                .HasKey(da => da.Id );
+
+            modelBuilder.Entity<User>()
+                .HasNoDiscriminator()
+                .ToContainer("Users")
+                .HasPartitionKey(da => da.Email)
+                .HasKey(da => da.Id );
+
+            modelBuilder.Entity<Product>()
+                .HasNoDiscriminator()
+                .ToContainer("Products")
+                .HasPartitionKey(da => da.Category)
+                .HasKey(da => da.Id );
         }
     }
 }
