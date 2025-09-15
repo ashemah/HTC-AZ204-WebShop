@@ -27,6 +27,11 @@
                                     <a class="nav-link text-dark" asp-area="" asp-page="/Cart/Cart">Cart(@Context.Session.GetString("CartCount"))</a>
                             </li>
                         }
+                        @if (Context.Session.GetString("IsAdmin") == "true"){
+                            <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-page="/Orders">Orders</a>
+                            </li>
+                        }
                     </ul>
                     <div class="d-flex align-items-center">
                         @if(Context.Session.GetString("AuthToken") != null)

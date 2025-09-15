@@ -23,8 +23,6 @@ public class OrderController : ControllerBase
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-        Console.WriteLine($"User ID: {userId}");
-
         var orders = await _orderService.GetOrdersAsync(userId);
 
         return Ok(orders);
