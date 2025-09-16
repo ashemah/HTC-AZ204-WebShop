@@ -13,6 +13,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /App
 COPY --from=build /App/out .
 
-EXPOSE 8080
+EXPOSE 8081
+ENV ASPNETCORE_URLS="http://0.0.0.0:8081"
 
-ENTRYPOINT ["dotnet", "Contoso.WebApp.dll"]
+ENTRYPOINT ["dotnet", "Contoso.Api.dll"]

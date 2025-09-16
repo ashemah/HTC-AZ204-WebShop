@@ -1,0 +1,11 @@
+services:
+  web:
+    image: 241499e3a678
+    ports:
+      - "8080:8080"
+    environment:
+      BackendUrl: "http://api:8081"
+  api:
+    image: 377babd3d05a
+    ports:
+      - "8081:8081"
