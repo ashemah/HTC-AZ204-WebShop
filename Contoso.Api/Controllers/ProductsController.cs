@@ -13,10 +13,12 @@ namespace Contoso.Api.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly IProductsService _productService;
+    private readonly IConfiguration _configuration;
 
-    public ProductsController(IProductsService productService)
+    public ProductsController(IProductsService productService, IConfiguration configuration)
     {
         _productService = productService;
+        _configuration = configuration;
     }
 
     [HttpPost]
@@ -73,10 +75,13 @@ public class ProductsController : ControllerBase
 
         try
         {            
-             BlobServiceClient client = new(
-                new Uri($"https://t03storage.blob.core.windows.net"),
-                new DefaultAzureCredential()
-                );
+            string connectionString = _configuration["StorageConnectionString"]; 
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                throw new InvalidOperationException("StorageConnectionString variable is not set.");
+            }
+
+            BlobServiceClient client = new BlobServiceClient(connectionString);
 
             // Get a reference to a container and create it if it doesn't exist.
             BlobContainerClient containerClient = client.GetBlobContainerClient(containerName);

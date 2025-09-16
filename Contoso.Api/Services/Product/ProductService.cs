@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Azure.Identity;
+using Azure.Storage.Sas;
 
 
 namespace Contoso.Api.Services;
@@ -14,23 +15,46 @@ public class ProductsService : IProductsService
 {
     private readonly ContosoDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IConfiguration _configuration;
 
-    public ProductsService(ContosoDbContext context, IMapper mapper)
+    public ProductsService(ContosoDbContext context, IMapper mapper, IConfiguration configuration)
     {
         _context = context;
         _mapper = mapper;
+        _configuration = configuration;
     }
 
     public async Task<PagedResult<ProductDto>> GetProductsAsync(QueryParameters queryParameters)
     {
-        BlobServiceClient client = new(
-            new Uri($"https://t03storage.blob.core.windows.net"),
-            new DefaultAzureCredential()
-        );
+        string connectionString = _configuration["StorageConnectionString"]; 
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            throw new InvalidOperationException("StorageConnectionString variable is not set.");
+        }
+
+        BlobServiceClient client = new BlobServiceClient(connectionString);
 
         // Get a reference to a container and create it if it doesn't exist.
         var containerName = "t03container";
         BlobContainerClient containerClient = client.GetBlobContainerClient(containerName);
+
+        // Generate a SAS for the container (Read) and reuse the query for all blob URLs
+        if (!containerClient.CanGenerateSasUri)
+        {
+            throw new InvalidOperationException("Unable to generate SAS URI for the container. Ensure the storage connection string includes an account key or use a credential capable of signing SAS.");
+        }
+        var containerSasUri = containerClient.GenerateSasUri(BlobContainerSasPermissions.Read, DateTimeOffset.UtcNow.AddHours(1));
+        var containerSasQuery = containerSasUri.Query; // starts with '?'
+
+        // Prepare thumbnails container and SAS (optional fallback)
+        var thumbsContainerName = "t03thumbs";
+        BlobContainerClient thumbsContainerClient = client.GetBlobContainerClient(thumbsContainerName);
+        string? thumbsSasQuery = null;
+        if (thumbsContainerClient.CanGenerateSasUri)
+        {
+            var thumbsSasUri = thumbsContainerClient.GenerateSasUri(BlobContainerSasPermissions.Read, DateTimeOffset.UtcNow.AddHours(1));
+            thumbsSasQuery = thumbsSasUri.Query;
+        }
 
 
 
@@ -51,35 +75,54 @@ public class ProductsService : IProductsService
             BlobProperties properties = blobClient.GetProperties();
             foreach (var metadataItem in properties.Metadata)
             {
-                Console.WriteLine($"Metadata Key: {metadataItem.Key}, Value: {metadataItem.Value}");    
+                Console.WriteLine($"Metadata Key: {metadataItem.Key}, Value: {metadataItem.Value}");
             }
 
             var releaseDate = "0";
             try
             {
                 releaseDate = properties.Metadata["ReleaseDate"];
-            } catch {}
-  
+            }
+            catch { }
+
 
             DateTime currentTime = DateTime.UtcNow;
             long unixTime = ((DateTimeOffset)currentTime).ToUnixTimeSeconds();
             long releaseDateUnix = long.Parse(releaseDate);
 
-        // var imageUri = "https://t03storage.blob.core.windows.net/t03container/comingsoon.png?sp=r&st=2025-09-10T01:27:43Z&se=2032-06-23T09:42:43Z&spr=https&sv=2024-11-04&sr=b&sig=fSE6dU5VPOb3fo%2FTd2bYvH5QClnAQeYrNeGrbZwgv7k%3D";
-        // try
-        // {
-        //     imageUri = blobClient.GenerateSasUri(Azure.Storage.Sas.BlobSasPermissions.Read, DateTimeOffset.UtcNow.AddHours(1)).ToString();
-        // } catch {}
-        // Console.WriteLine($"HERE555 {imageUri}");
-
             if (unixTime >= releaseDateUnix)
             {
-                item.ImageUrl = "https://t03storage.blob.core.windows.net/t03container/" + item.ImageUrl + "?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D";
-                //item.ImageUrl = imageUri.ToString();
+                // Prefer thumbnail in t03thumbs if it exists; fallback to full-size image in main container
+                var fullUrl = $"{containerClient.Uri}/{item.ImageUrl}{containerSasQuery}";
+
+                bool usedThumb = false;
+                if (!string.IsNullOrEmpty(thumbsSasQuery))
+                {
+                    var thumbBlobName = $"thumb_{item.ImageUrl}";
+                    var thumbsBlobClient = thumbsContainerClient.GetBlobClient(thumbBlobName);
+                    try
+                    {
+                        if (thumbsBlobClient.Exists())
+                        {
+                            item.ImageUrl = $"{thumbsContainerClient.Uri}/{thumbBlobName}{thumbsSasQuery}";
+                            usedThumb = true;
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore errors when checking thumbnail; fallback to full-size
+                    }
+                }
+
+                if (!usedThumb)
+                {
+                    item.ImageUrl = fullUrl;
+                }
             }
             else
             {
-                item.ImageUrl = "https://t03storage.blob.core.windows.net/t03container/comingsoon.png?sp=r&st=2025-09-10T01:27:43Z&se=2032-06-23T09:42:43Z&spr=https&sv=2024-11-04&sr=b&sig=fSE6dU5VPOb3fo%2FTd2bYvH5QClnAQeYrNeGrbZwgv7k%3D";
+                var comingSoonUrl = $"{containerClient.Uri}/comingsoon.png";
+                item.ImageUrl = $"{comingSoonUrl}{containerSasQuery}";
             }
 
         }
@@ -102,15 +145,34 @@ public class ProductsService : IProductsService
         var product = await _context.Products.FindAsync(id);
         var item = _mapper.Map<ProductDto>(product);
 
+        string connectionString = _configuration["StorageConnectionString"];
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            throw new InvalidOperationException("StorageConnectionString variable is not set.");
+        }
 
-        BlobServiceClient client = new(
-            new Uri($"https://t03storage.blob.core.windows.net"),
-            new DefaultAzureCredential()
-        );
+        BlobServiceClient client = new BlobServiceClient(connectionString);
 
         // Get a reference to a container and create it if it doesn't exist.
         var containerName = "t03container";
         BlobContainerClient containerClient = client.GetBlobContainerClient(containerName);
+
+        if (!containerClient.CanGenerateSasUri)
+        {
+            throw new InvalidOperationException("Unable to generate SAS URI for the container. Ensure the storage connection string includes an account key or use a credential capable of signing SAS.");
+        }
+        var containerSasUri = containerClient.GenerateSasUri(BlobContainerSasPermissions.Read, DateTimeOffset.UtcNow.AddHours(1));
+        var containerSasQuery = containerSasUri.Query;
+
+        // Thumbnails container (optional)
+        var thumbsContainerName = "t03thumbs";
+        BlobContainerClient thumbsContainerClient = client.GetBlobContainerClient(thumbsContainerName);
+        string? thumbsSasQuery = null;
+        if (thumbsContainerClient.CanGenerateSasUri)
+        {
+            var thumbsSasUri = thumbsContainerClient.GenerateSasUri(BlobContainerSasPermissions.Read, DateTimeOffset.UtcNow.AddHours(1));
+            thumbsSasQuery = thumbsSasUri.Query;
+        }
 
             BlobClient blobClient = containerClient.GetBlobClient(item.ImageUrl);
             BlobProperties properties = blobClient.GetProperties();
@@ -141,12 +203,36 @@ public class ProductsService : IProductsService
         // Console.WriteLine($"HERE2 {imageUri}");
         if (unixTime >= releaseDateUnix)
         {
-            item.ImageUrl = "https://t03storage.blob.core.windows.net/t03container/" + item.ImageUrl + "?sp=r&st=2025-09-10T00:11:53Z&se=2025-09-10T08:26:53Z&spr=https&sv=2024-11-04&sr=c&sig=DmFnQeB9yO%2FKaiHNrZzRXL1ATszt0t0opG3uI0UArZw%3D";
-            //item.ImageUrl = imageUri.ToString();
+            // Prefer thumbnail in t03thumbs if available
+            var fullUrl = $"{containerClient.Uri}/{item.ImageUrl}{containerSasQuery}";
+            bool usedThumb = false;
+            if (!string.IsNullOrEmpty(thumbsSasQuery))
+            {
+                var thumbBlobName = $"thumb_{item.ImageUrl}";
+                var thumbsBlobClient = thumbsContainerClient.GetBlobClient(thumbBlobName);
+                try
+                {
+                    if (thumbsBlobClient.Exists())
+                    {
+                        item.ImageUrl = $"{thumbsContainerClient.Uri}/{thumbBlobName}{thumbsSasQuery}";
+                        usedThumb = true;
+                    }
+                }
+                catch
+                {
+                    // Ignore errors when checking thumbnail; fallback to full-size
+                }
+            }
+
+            if (!usedThumb)
+            {
+                item.ImageUrl = fullUrl;
+            }
         }
         else
         {
-            item.ImageUrl = "https://t03storage.blob.core.windows.net/t03container/comingsoon.png?sp=r&st=2025-09-10T01:27:43Z&se=2032-06-23T09:42:43Z&spr=https&sv=2024-11-04&sr=b&sig=fSE6dU5VPOb3fo%2FTd2bYvH5QClnAQeYrNeGrbZwgv7k%3D";
+            var comingSoonUrl = $"{containerClient.Uri}/comingsoon.png";
+            item.ImageUrl = $"{comingSoonUrl}{containerSasQuery}";
         }
 
 
