@@ -2,6 +2,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authentication;
 
 public class AuthHandler : DelegatingHandler
 {
@@ -14,11 +15,25 @@ public class AuthHandler : DelegatingHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var token = _httpContextAccessor.HttpContext.Session.GetString("AuthToken");
+        var httpContext = _httpContextAccessor.HttpContext;
 
-        if (!string.IsNullOrEmpty(token))
+        if (httpContext != null)
         {
-            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            // Prefer legacy API session token if present (backwards compatibility)
+            var sessionToken = httpContext.Session.GetString("AuthToken");
+            if (!string.IsNullOrEmpty(sessionToken))
+            {
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionToken);
+            }
+            else if (httpContext.User?.Identity?.IsAuthenticated == true)
+            {
+                // Try to get an access token from the current user context (Entra ID)
+                var accessToken = await httpContext.GetTokenAsync("access_token");
+                if (!string.IsNullOrEmpty(accessToken))
+                {
+                    request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+                }
+            }
         }
 
         return await base.SendAsync(request, cancellationToken);

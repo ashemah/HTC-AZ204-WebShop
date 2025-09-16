@@ -12,13 +12,14 @@ using Contoso.WebApp.Extensions;
 using Microsoft.AspNetCore.Server.HttpSys;
 
 
+[AllowAnonymous]
 public class HomeModel : PageModel
 {
     public List<ProductDto> Products { get; set; }
 
     public List<string> Categories { get; set; }
 
-    public int CurrentPage  { get; set; } = 1;
+    public int CurrentPage { get; set; } = 1;
 
     public int TotalPages { get; set; }
 
@@ -35,18 +36,18 @@ public class HomeModel : PageModel
     {
         _contosoAPI = contosoAPI;
     }
-   
+
     public async Task OnGetAsync()
     {
 
-        if (HttpContext.Session.Get("CartCount") == null) 
+        if (HttpContext.Session.Get("CartCount") == null)
         {
             HttpContext.Session.Set("CartCount", 0);
         }
-        
+
         var category_response = await _contosoAPI.GetCategoriesAsync();
         Categories = category_response.Content;
-    
+
         bool isCategorySelected = HttpContext.Session.Get<string>("CategorySelected") != null;
         bool isPageSelected = HttpContext.Session.Get<int>("CurrentPage") > 0;
 
@@ -93,7 +94,7 @@ public class HomeModel : PageModel
 
     public async Task<IActionResult> OnGetUploadImagesAsync()
     {
-         var imagesPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+        var imagesPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
         var imageFiles = Directory.GetFiles(imagesPath);
         var productImages = new List<ProductImageDto>();
 
@@ -137,7 +138,7 @@ public class HomeModel : PageModel
         {
             TempData["ErrorMessage"] = "Error bulk uploading products";
         }
-        
+
         return RedirectToPage();
     }
 

@@ -34,28 +34,7 @@
                         }
                     </ul>
                     <div class="d-flex align-items-center">
-                        @if(Context.Session.GetString("AuthToken") != null)
-                        {
-                            <ul class="navbar-nav ml-auto">
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-page="/Profile/Profile">User Profile(@Context.Session.GetString("UserName"))</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-page="/Account/Logout">Logout</a>
-                                </li>
-                            </ul>
-                        }
-                        else 
-                        {
-                            <ul class="navbar-nav ml-auto">
-                                <li class="nav-item">
-                                    <span class="nav-link text-dark">Anonymous</span>
-                                </li> 
-                               <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-page="/Account/Login">Login</a>
-                               </li>     
-                            </ul>          
-                        }
+                        @await Html.PartialAsync("_LoginPartial")
                         <a href="/Product/Create" class="btn btn-primary ms-3">Upload</a>
                     </div>  
                 </div>
