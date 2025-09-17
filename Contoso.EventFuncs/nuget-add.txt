@@ -1,0 +1,2 @@
+<PackageReference Include="Microsoft.Azure.WebJobs.Extensions.EventGrid" Version="3.3.0" />
+<PackageReference Include="Microsoft.Azure.EventGrid" Version="4.5.0" />
